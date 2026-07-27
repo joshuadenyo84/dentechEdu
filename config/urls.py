@@ -1,10 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include
-from django.http import HttpResponse  # Added for the landing page
-from drf_spectacular.views import (
-    SpectacularAPIView,
-    SpectacularSwaggerView,
-)
+from django.http import HttpResponse
+from django.urls import include, path
+from django.views.generic.base import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -16,8 +14,8 @@ admin.site.site_title = "DentechEdu Portal"
 admin.site.index_title = "Welcome to DentechEdu Management System"
 
 
-# A clean, modern landing page view function
 def homepage_view(request):
+    """Render a clean, modern landing page for the application."""
     html_content = """
     <!DOCTYPE html>
     <html lang="en">
@@ -83,16 +81,21 @@ def homepage_view(request):
 
 
 urlpatterns = [
+    # Static Assets Router (Stops browser favicon.ico 404 log spam)
+    path(
+        "favicon.ico",
+        RedirectView.as_view(
+            url="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+            permanent=True,
+        ),
+    ),
     # Root Homepage Landing Route
     path("", homepage_view, name="home"),
-
     # Django Administrative Management Suite
     path("admin/", admin.site.urls),
-
     # Core REST Framework Endpoints
     path("api/", include("api.urls")),
     path("api/finance/", include("finance.urls")),
-
     # API Documentation Engines
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -100,7 +103,6 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
-
     # JSON Web Token Security Auth Engine
     path(
         "api/token/",

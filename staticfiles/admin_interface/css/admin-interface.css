@@ -571,15 +571,3 @@
     transition: none;
     filter: invert(100%);
 }
-
-/* Restores calendar widget width to standard size */
-.calendarbox {
-    width: 19em !important;
-}
-
-/* Adjusts responsive mobile positioning for calendar components */
-.datetime {
-    display: inline-block !important;
-    max-width: 100% !important;
-}
-

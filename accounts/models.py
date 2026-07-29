@@ -1,5 +1,7 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class User(AbstractUser):
@@ -22,17 +24,8 @@ class User(AbstractUser):
     )
 
     phone = models.CharField(max_length=20, blank=True)
-
-    national_id = models.CharField(
-        max_length=30,
-        blank=True
-    )
-
-    profile_photo = models.ImageField(
-        upload_to="profiles/",
-        blank=True,
-        null=True
-    )
+    national_id = models.CharField(max_length=30, blank=True)
+    profile_photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
@@ -45,26 +38,47 @@ class User(AbstractUser):
         else:
             self.is_staff = False
 
-        # 2. Save the primary user instance metadata to generating primary key id
+        # 2. Save primary database metadata
         super().save(*args, **kwargs)
 
-        # 3. Automatically link security groups dynamically to avoid script manual setups
-        from django.contrib.auth.models import Group
-        
-        # Clear existing groups first to handle scenarios where a user's role is updated/changed
-        self.groups.clear()
 
-        if self.role == self.Roles.ADMIN:
-            group = Group.objects.filter(name="School Administrators").first()
-            if group:
-                self.groups.add(group)
-            
-        elif self.role in [self.Roles.PRINCIPAL, self.Roles.DEPUTY]:
-            group = Group.objects.filter(name="Principals & Deputies").first()
-            if group:
-                self.groups.add(group)
-            
-        elif self.role == self.Roles.ACCOUNTANT:
-            group = Group.objects.filter(name="Bursars & Accountants").first()
-            if group:
-                self.groups.add(group)
+# ==========================================
+# AUTOMATED ROLE PERMISSION MAPPING (SIGNALS)
+# ==========================================
+
+@receiver(post_save, sender=User)
+def assign_user_to_group(sender, instance, created, **kwargs):
+    """
+    Safely maps the user to their matching school security Group.
+    Clears existing mappings if their professional role shifts.
+    """
+    # Disconnect signal tracking temporarily during execution to prevent recursion loops
+    post_save.disconnect(assign_user_to_group, sender=User)
+
+    try:
+        # Clear previous groups to handle role re-assignments gracefully
+        instance.groups.clear()
+
+        # Define map between roles and group naming conventions
+        role_group_map = {
+            User.Roles.ADMIN: "School Administrators",
+            User.Roles.PRINCIPAL: "Principals & Deputies",
+            User.Roles.DEPUTY: "Principals & Deputies",
+            User.Roles.ACCOUNTANT: "Bursars & Accountants",
+            User.Roles.TEACHER: "Teachers",
+            User.Roles.STUDENT: "Students",
+            User.Roles.PARENT: "Parents",
+            User.Roles.LIBRARIAN: "Librarians",
+            User.Roles.RECEPTIONIST: "Receptionists",
+        }
+
+        group_name = role_group_map.get(instance.role)
+
+        if group_name:
+            # Safely grab or generate the specific security permission block
+            group, _ = Group.objects.get_or_create(name=group_name)
+            instance.groups.add(group)
+
+    finally:
+        # Reconnect the signal tracker for subsequent actions
+        post_save.connect(assign_user_to_group, sender=User)

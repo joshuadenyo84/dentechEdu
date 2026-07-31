@@ -1,5 +1,12 @@
 from django.db import models
 
+# ❌ Bad
+# from academics.models import Grade
+# grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
+
+# ✅ Good
+grade = models.ForeignKey('academics.Grade', on_delete=models.CASCADE)
+stream = models.ForeignKey('academics.Stream', on_delete=models.CASCADE)
 from academics.models import (
     AcademicYear,
     Term,
@@ -73,3 +80,16 @@ class TimetableEntry(models.Model):
 
     class Meta:
         ordering = ["day", "period"]
+
+# students/views.py
+
+def student_schedule_view(request, student_id):
+    # Import directly inside the view function
+    from timetable.models import TimetableEntry 
+    
+    # Query using TimetableEntry
+    schedules = TimetableEntry.objects.filter(
+        grade=student.grade, 
+        stream=student.stream
+    )
+    ...

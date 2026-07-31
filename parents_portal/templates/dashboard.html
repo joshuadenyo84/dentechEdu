@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ portal_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f6f9; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Welcome to the {{ portal_name }}</h1>
+        <p>Hello, <strong>{{ request.user.username }}</strong>! Your portal registration is active.</p>
+        <p>Student academic overview, attendance records, and outstanding fee invoices will appear here.</p>
+    </div>
+</body>
+</html>

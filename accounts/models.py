@@ -1,84 +1,82 @@
-from django.contrib.auth.models import AbstractUser, Group
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
+class Role(models.Model):
+    """Dynamic Role model that wraps Django's permission Groups."""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    
+    # URL name to redirect users upon login (e.g., 'students:dashboard', 'teachers:dashboard')
+    dashboard_url = models.CharField(
+        max_length=100, 
+        default="core:home",
+        help_text="URL pattern name for routing user after login."
+    )
+
+    # Automatically links this role to Django's built-in Group
+    group = models.OneToOneField(
+        Group, on_delete=models.CASCADE, related_name="role_profile", null=True, blank=True
+    )
+    
+    is_staff_role = models.BooleanField(
+        default=False, 
+        help_text="Check if users with this role should access administrative interfaces."
+    )
+
+    def save(self, *args, **kwargs):
+        # 1. Create linked group if it doesn't exist yet
+        if not self.group_id:
+            group, _ = Group.objects.get_or_create(name=self.name)
+            self.group = group
+        else:
+            # 2. If role name was edited, sync the underlying Django Group name too
+            if self.group.name != self.name:
+                self.group.name = self.name
+                self.group.save()
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class User(AbstractUser):
-
-    class Roles(models.TextChoices):
-        ADMIN = "ADMIN", "Administrator"
-        PRINCIPAL = "PRINCIPAL", "Principal"
-        DEPUTY = "DEPUTY", "Deputy Principal"
-        TEACHER = "TEACHER", "Teacher"
-        PARENT = "PARENT", "Parent"
-        STUDENT = "STUDENT", "Student"
-        ACCOUNTANT = "ACCOUNTANT", "Accountant"
-        LIBRARIAN = "LIBRARIAN", "Librarian"
-        RECEPTIONIST = "RECEPTIONIST", "Receptionist"
-
-    role = models.CharField(
-        max_length=30,
-        choices=Roles.choices,
-        default=Roles.STUDENT
+    """User model linked dynamically to a Role instance."""
+    role = models.ForeignKey(
+        Role, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="users"
     )
 
     phone = models.CharField(max_length=20, blank=True)
     national_id = models.CharField(max_length=30, blank=True)
-    profile_photo = models.ImageField(upload_to="profiles/", blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.username} ({self.role})"
 
     def save(self, *args, **kwargs):
-        # 1. Automatically flag administrative roles so they can pass the admin login page screen
-        staff_roles = {self.Roles.ADMIN, self.Roles.PRINCIPAL, self.Roles.DEPUTY, self.Roles.ACCOUNTANT}
-        if self.role in staff_roles or self.is_superuser:
-            self.is_staff = True
-        else:
+        # Handle staff status attribute cleanly before database commit
+        if self.role:
+            self.is_staff = self.role.is_staff_role or self.is_superuser
+        elif not self.is_superuser:
             self.is_staff = False
 
-        # 2. Save primary database metadata
         super().save(*args, **kwargs)
 
 
-# ==========================================
-# AUTOMATED ROLE PERMISSION MAPPING (SIGNALS)
-# ==========================================
+# =======================================================
+# SAFE M2M SYNCING VIA SIGNAL (Executes post-database commit)
+# =======================================================
 
 @receiver(post_save, sender=User)
-def assign_user_to_group(sender, instance, created, **kwargs):
+def sync_user_role_to_django_groups(sender, instance, **kwargs):
     """
-    Safely maps the user to their matching school security Group.
-    Clears existing mappings if their professional role shifts.
+    Safely synchronizes the custom Role foreign key with Django's native Group M2M 
+    field only after the database instance has a fully committed ID.
     """
-    # Disconnect signal tracking temporarily during execution to prevent recursion loops
-    post_save.disconnect(assign_user_to_group, sender=User)
-
-    try:
-        # Clear previous groups to handle role re-assignments gracefully
+    if instance.role and instance.role.group:
+        instance.groups.set([instance.role.group])
+    else:
         instance.groups.clear()
-
-        # Define map between roles and group naming conventions
-        role_group_map = {
-            User.Roles.ADMIN: "School Administrators",
-            User.Roles.PRINCIPAL: "Principals & Deputies",
-            User.Roles.DEPUTY: "Principals & Deputies",
-            User.Roles.ACCOUNTANT: "Bursars & Accountants",
-            User.Roles.TEACHER: "Teachers",
-            User.Roles.STUDENT: "Students",
-            User.Roles.PARENT: "Parents",
-            User.Roles.LIBRARIAN: "Librarians",
-            User.Roles.RECEPTIONIST: "Receptionists",
-        }
-
-        group_name = role_group_map.get(instance.role)
-
-        if group_name:
-            # Safely grab or generate the specific security permission block
-            group, _ = Group.objects.get_or_create(name=group_name)
-            instance.groups.add(group)
-
-    finally:
-        # Reconnect the signal tracker for subsequent actions
-        post_save.connect(assign_user_to_group, sender=User)

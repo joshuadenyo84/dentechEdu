@@ -2,7 +2,12 @@ from django.db import models
 from school.models import School
 from academics.models import AcademicYear, Term, Grade, Subject
 from students.models import Student
+# ❌ Bad
+# from academics.models import Grade
+# grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
 
+# ✅ Good
+grade = models.ForeignKey('academics.Grade', on_delete=models.CASCADE)
 class ExamType(models.Model):
     """Defines evaluation blocks (e.g., Opener, Mid-Term, End of Term, KPSEA Mock)"""
     name = models.CharField(max_length=100) # e.g., Mid-Term Assessment
@@ -38,3 +43,18 @@ class ExamResult(models.Model):
 
     def __str__(self):
         return f"{self.student.user.get_full_name()} - {self.schedule.subject}: {self.marks_obtained}"
+
+# Inside examinations/models.py
+
+class ExamResult(models.Model):
+    schedule = models.ForeignKey(ExamSchedule, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    marks_obtained = models.DecimalField(max_digits=5, decimal_places=2)
+    remarks = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        unique_together = ('schedule', 'student')
+
+    # Update this method to look like this:
+    def __str__(self):
+        return f"{self.student.full_name} - {self.schedule.subject}: {self.marks_obtained}"

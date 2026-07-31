@@ -1,7 +1,12 @@
 from django.db import models
 from django.conf import settings
 
+# ❌ Bad
+# from academics.models import Grade
+# grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
 
+# ✅ Good
+grade = models.ForeignKey('academics.Grade', on_delete=models.CASCADE)
 class TimeStampedModel(models.Model):
     """
     Automatically stores creation and modification dates.

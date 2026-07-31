@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+def my_student_view(request):
+    from timetable.models import TimetableEntry
+    # ...

@@ -143,3 +143,53 @@ STATICFILES_DIRS = [
     # Explicitly lets Django look for custom project-level assets if you ever add them
     # BASE_DIR / 'static',
 ]
+
+# core_project/settings.py
+
+# Where to send users after a successful login
+LOGIN_REDIRECT_URL = '/'  
+
+# Where to send users if they try to access a protected page without logging in
+LOGIN_URL = 'accounts:login'  
+
+# In your main settings.py file:
+LOGIN_REDIRECT_URL = 'student_portal'
+LOGOUT_REDIRECT_URL = 'login'
+# Where Django redirects after a successful login if no next parameter is present
+LOGIN_REDIRECT_URL = '/accounts/parents/dashboard/'
+
+# Where Django redirects after a successful logout (points to standard admin login)
+LOGOUT_REDIRECT_URL = '/admin/login/'
+
+# settings.py
+AUTHENTICATION_BACKENDS = [
+    # Checks student credentials first
+    'parents_portal.auth_backends.StudentCredentialsBackend',
+    # Keeps standard admin panel / username login working
+    'django.contrib.auth.backends.ModelBackend', 
+]
+
+# config/settings.py
+
+AUTHENTICATION_BACKENDS = [
+    # Checks student credentials via admission number and UPI
+    'students.auth_backends.StudentAdmissionBackend',
+    
+    # Keeps your parents portal credential backend working
+    'parents_portal.auth_backends.StudentCredentialsBackend',
+    
+    # Keeps standard admin panel / username admin logins working
+    'django.contrib.auth.backends.ModelBackend', 
+]
+
+
+# Once a parent logs in, Django will automatically redirect them here
+LOGIN_REDIRECT_URL = '/accounts/parents/dashboard/'
+
+
+MPESA_ENVIRONMENT = 'sandbox' # Change to 'production' for live apps
+MPESA_CONSUMER_KEY = 'YOUR_CONSUMER_KEY'
+MPESA_CONSUMER_SECRET = 'YOUR_CONSUMER_SECRET'
+MPESA_SHORTCODE = '174379' # Sandbox Paybill
+MPESA_PASSKEY = 'bfb272ea0d6cbe944e1771759f57430a47307b8111cdb9330894d3e1e811721b'
+MPESA_CALLBACK_URL = 'https://yourdomain.com' 

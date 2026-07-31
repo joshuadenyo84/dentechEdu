@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.get_role_display }} Portal | DentechEdu</title>
+    
+    <!-- Link your Django Admin panel's main CSS files for perfect uniformity -->
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/base.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/dashboard.css' %}">
+    
+    <style>
+        /* Custom tweaks to make it feel like a student/teacher dashboard */
+        body { background: #f4f6f9; font-family: "Roboto", "Lucida Grande", Verdana, sans-serif; margin: 0; padding: 0; }
+        .portal-header { background: #10b981; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .portal-header h1 { margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px; }
+        .portal-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .welcome-card { background: white; border-radius: 6px; padding: 25px; margin-bottom: 25px; border-top: 4px solid #10b981; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .module-card { background: white; pading: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px; }
+        .module-card h3 { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; color: #1e293b; }
+        .metric { font-size: 28px; font-weight: bold; color: #10b981; margin: 15px 0 5px 0; }
+        .btn-exit { background: #ef4444; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .btn-action { display: block; text-align: center; background: #10b981; color: white; text-decoration: none; padding: 10px; border-radius: 4px; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Navigation Ribbon -->
+    <header class="portal-header">
+        <h1>DentechEdu ERP — {{ user.get_role_display }} Workspace</h1>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <span style="font-weight: 600;">Welcome back to your Student Portal, {{ student.full_name }}</span>
+            <a href="/admin/logout/" class="btn-exit">Exit Portal</a>
+        </div>
+    </header>
+
+    <div class="portal-container">
+
+        <!-- 1. STUDENT PORTAL -->
+        {% if user.role == "STUDENT" %}
+        <div class="welcome-card">
+            <h2>Student Terminal</h2>
+            <p>Track your registered stream classes, view test marks, and monitor attendance records.</p>
+            <div class="module-card">
+                <h3> Admission Details</h3>
+                <p style="color: #64748b; font-size: 12px; margin-top: 5px;">Admission Number: {{ student.admission_number }}</p>
+            </div>
+        </div>
+        <div class="grid-layout">
+            <div class="module-card">
+                <h3>📅 Current Timetable</h3>
+                <p>{{ student.grade }} — {{ student.stream }}</p>
+
+                <p style="color: #64748b; font-size: 12px; margin-top: 5px;">Next Class: Mathematics at 08:30 AM</p>
+            </div>
+            <div class="module-card">
+                <h3>📊 Term Attendance</h3>
+                <div class="metric">{{ student.rolling_attendance_percentage }}%
+</div>
+                <p style="color: #64748b; font-size: 12px;">Status: Satisfactory Clearance</p>
+            </div>
+            <div class="module-card">
+                <h3>📝 Latest Grades</h3>
+                <p>Mathematics: <strong>A</strong></p>
+                <p>English Lit: <strong>A-</strong></p>
+            </div>
+        </div>
+
+        <!-- 2. TEACHER DASHBOARD -->
+        {% elif user.role == "TEACHER" %}
+        <div class="welcome-card" style="border-top-color: #2563eb;">
+            <h2>Faculty Control Panel</h2>
+            <p>Record classroom roll call metrics, evaluate continuous assessments, and input end-of-term marks.</p>
+        </div>
+        <div class="grid-layout">
+            <div class="module-card">
+                <h3>🏫 Assigned Classes</h3>
+                <p>Form 3 East, Form 4 West</p>
+                <a href="#" class="btn-action" style="background: #2563eb;">Open Attendance Register</a>
+            </div>
+            <div class="module-card">
+                <h3>📝 Examination Entry</h3>
+                <p>Term 1 Continuous Assessment Sheets are open.</p>
+                <a href="#" class="btn-action" style="background: #2563eb;">Input Class Marks</a>
+            </div>
+        </div>
+
+        <!-- 3. ACCOUNTANT FINANCIAL CONSOLE -->
+        {% elif user.role == "ACCOUNTANT" %}
+        <div class="welcome-card" style="border-top-color: #059669;">
+            <h2>Bursar Desk Console</h2>
+            <p>Track student fee balances, allocate custom term invoices, and view cash flow transactions.</p>
+        </div>
+        <div class="grid-layout">
+            <div class="module-card">
+                <h3>💰 Outstanding Balances</h3>
+                <div class="metric" style="color: #dc2626;">KES 2,410,500</div>
+                <p style="color: #64748b; font-size: 12px;">Pending student tuition fees</p>
+            </div>
+            <div class="module-card">
+                <h3>📥 Quick Tasks</h3>
+                <a href="#" class="btn-action" style="background: #059669;">Generate Student Invoice</a>
+                <a href="#" class="btn-action" style="background: #1e293b;">View Bank Ledgers</a>
+            </div>
+        </div>
+
+        <!-- 4. GENERAL STAFF / PRINCIPAL FALLBACK -->
+        {% else %}
+        <div class="welcome-card" style="border-top-color: #475569;">
+            <h2>DentechEdu Staff Account</h2>
+            <p>Your profile is registered with role clearance: <strong>{{ user.role }}</strong>.</p>
+            <a href="/admin/" class="btn-action" style="background: #475569; display: inline-block; padding: 10px 20px;">Open Admin System Panels</a>
+        </div>
+        {% endif %}
+
+    </div>
+
+</body>
+</html>

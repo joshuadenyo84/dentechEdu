@@ -3,7 +3,12 @@ from django.conf import settings
 
 from academics.models import Subject, Stream
 
+# ❌ Bad
+# from academics.models import Grade
+# grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
 
+# ✅ Good
+grade = models.ForeignKey('academics.Grade', on_delete=models.CASCADE)
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)

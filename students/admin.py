@@ -1,5 +1,5 @@
 from django.contrib import admin
-from finance.admin import TenantBaseAdmin  # Inherited for multi-database routing isolation
+from core.admin import TenantBaseAdmin # Inherited for multi-database routing isolation
 from .models import Student, Guardian, MedicalRecord, Address
 
 

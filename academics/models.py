@@ -1,6 +1,11 @@
 from django.db import models
 
+# ❌ Bad
+# from academics.models import Grade
+# grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
 
+# ✅ Good
+grade = models.ForeignKey('academics.Grade', on_delete=models.CASCADE)
 class AcademicYear(models.Model):
     name = models.CharField(max_length=20, unique=True)
     start_date = models.DateField()
